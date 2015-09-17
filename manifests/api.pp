@@ -38,7 +38,16 @@
 #   (optional) Some operations require cinder to make API requests
 #   to Nova. This sets the keystone region to be used for these
 #   requests. For example, boot-from-volume.
-#   Defaults to undef.
+#   Defaults to '<SERVICE DEFAULT>'.
+#
+# [*nova_catalog_info*]
+#   (optional) Match this value when searching for nova in the service
+#   catalog.
+#   Defaults to 'compute:Compute Service:publicURL'
+#
+# [*nova_catalog_admin_info*]
+#   (optional) Same as nova_catalog_info, but for admin endpoint.
+#   Defaults to 'compute:Compute Service:adminURL'
 #
 # [*keystone_auth_admin_prefix*]
 #   (optional) DEPRECATED The admin_prefix used to admin endpoint of the auth
@@ -97,7 +106,7 @@
 #   This should contain the name of the default volume type to use.
 #   If not configured, it produces an error when creating a volume
 #   without specifying a type.
-#   Defaults to 'false'.
+#   Defaults to '<SERVICE DEFAULT>'.
 #
 # [*validate*]
 #   (optional) Whether to validate the service is working after any service refreshes
@@ -130,14 +139,16 @@ class cinder::api (
   $keystone_user              = 'cinder',
   $auth_uri                   = false,
   $identity_uri               = false,
-  $os_region_name             = undef,
+  $nova_catalog_info          = 'compute:Compute Service:publicURL',
+  $nova_catalog_admin_info    = 'compute:Compute Service:adminURL',
+  $os_region_name             = '<SERVICE DEFAULT>',
   $service_workers            = $::processorcount,
   $package_ensure             = 'present',
   $bind_host                  = '0.0.0.0',
   $enabled                    = true,
   $manage_service             = true,
   $ratelimits                 = undef,
-  $default_volume_type        = false,
+  $default_volume_type        = '<SERVICE DEFAULT>',
   $ratelimits_factory =
     'cinder.api.v1.limits:RateLimitingMiddleware.factory',
   $validate                   = false,
@@ -196,12 +207,13 @@ class cinder::api (
   cinder_config {
     'DEFAULT/osapi_volume_listen':  value => $bind_host;
     'DEFAULT/osapi_volume_workers': value => $service_workers;
+    'DEFAULT/os_region_name':       value => $os_region_name;
+    'DEFAULT/default_volume_type':  value => $default_volume_type;
   }
 
-  if $os_region_name {
-    cinder_config {
-      'DEFAULT/os_region_name': value => $os_region_name;
-    }
+  cinder_config {
+    'DEFAULT/nova_catalog_info':       value => $nova_catalog_info;
+    'DEFAULT/nova_catalog_admin_info': value => $nova_catalog_admin_info;
   }
 
   if $keystone_auth_uri and $auth_uri {
@@ -323,16 +335,6 @@ class cinder::api (
     cinder_api_paste_ini {
       'filter:ratelimit/paste.filter_factory': value => $ratelimits_factory;
       'filter:ratelimit/limits':               value => $ratelimits;
-    }
-  }
-
-  if $default_volume_type {
-    cinder_config {
-      'DEFAULT/default_volume_type': value => $default_volume_type;
-    }
-  } else {
-    cinder_config {
-      'DEFAULT/default_volume_type': ensure => absent;
     }
   }
 

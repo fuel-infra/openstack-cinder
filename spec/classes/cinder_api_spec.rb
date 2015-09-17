@@ -31,8 +31,17 @@ describe 'cinder::api' do
       is_expected.to contain_cinder_config('DEFAULT/osapi_volume_workers').with(
        :value => '8'
       )
+      is_expected.to contain_cinder_config('DEFAULT/nova_catalog_info').with(
+       :value => 'compute:Compute Service:publicURL'
+      )
+      is_expected.to contain_cinder_config('DEFAULT/nova_catalog_admin_info').with(
+       :value => 'compute:Compute Service:adminURL'
+      )
       is_expected.to contain_cinder_config('DEFAULT/default_volume_type').with(
-       :ensure => 'absent'
+       :value => '<SERVICE DEFAULT>'
+      )
+      is_expected.to contain_cinder_config('DEFAULT/os_region_name').with(
+       :value => '<SERVICE DEFAULT>'
       )
       is_expected.to contain_cinder_api_paste_ini('filter:authtoken/service_protocol').with(
         :value => 'http'
@@ -69,9 +78,19 @@ describe 'cinder::api' do
         :value => 'http://localhost:5000/'
       )
 
-      is_expected.to_not contain_cinder_config('DEFAULT/os_region_name')
 
     end
+  end
+
+  describe 'with a custom nova_catalog params' do
+    let :params do
+      req_params.merge({
+        'nova_catalog_admin_info' => 'compute:nova:adminURL',
+        'nova_catalog_info' => 'compute:nova:publicURL',
+      })
+    end
+    it { is_expected.to contain_cinder_config('DEFAULT/nova_catalog_admin_info').with_value('compute:nova:adminURL') }
+    it { is_expected.to contain_cinder_config('DEFAULT/nova_catalog_info').with_value('compute:nova:publicURL') }
   end
 
   describe 'with a custom region for nova' do
