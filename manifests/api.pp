@@ -163,12 +163,12 @@ class cinder::api (
   $identity_uri                = false,
   $nova_catalog_info           = 'compute:Compute Service:publicURL',
   $nova_catalog_admin_info     = 'compute:Compute Service:adminURL',
+  $os_region_name              = '<SERVICE DEFAULT>',
   $privileged_user             = false,
   $os_privileged_user_name     = undef,
   $os_privileged_user_password = undef,
   $os_privileged_user_tenant   = undef,
   $os_privileged_user_auth_url = undef,
-  $os_region_name              = '<SERVICE DEFAULT>',
   $service_workers             = $::processorcount,
   $package_ensure              = 'present',
   $bind_host                   = '0.0.0.0',
@@ -244,9 +244,15 @@ class cinder::api (
   }
 
   if $privileged_user {
-    validate_re($os_privileged_user_name, '\w+')
-    validate_re($os_privileged_user_password, '^\w+$')
-    validate_re($os_privileged_user_tenant, '^\w+$')
+    if !$os_privileged_user_name {
+      fail('The os_privileged_user_name parameter is required when privileged_user is set to true')
+    }
+    if !$os_privileged_user_password {
+      fail('The os_privileged_user_password parameter is required when privileged_user is set to true')
+    }
+    if !$os_privileged_user_tenant {
+      fail('The os_privileged_user_tenant parameter is required when privileged_user is set to true')
+    }
 
     cinder_config {
       'DEFAULT/os_privileged_user_password': value => $os_privileged_user_password;

@@ -149,7 +149,7 @@ describe 'cinder::api' do
         })
       end
 
-      it_raises 'a Puppet::Error', /validate_re/
+      it_raises 'a Puppet::Error', /The os_privileged_user_name parameter is required when privileged_user is set to true/
     end
 
     context 'without os_privileged_user_password' do
@@ -160,7 +160,7 @@ describe 'cinder::api' do
         })
       end
 
-      it_raises 'a Puppet::Error', /validate_re/
+      it_raises 'a Puppet::Error', /The os_privileged_user_password parameter is required when privileged_user is set to true/
     end
 
     context 'without os_privileged_user_tenant' do
@@ -172,7 +172,7 @@ describe 'cinder::api' do
         })
       end
 
-      it_raises 'a Puppet::Error', /validate_re/
+      it_raises 'a Puppet::Error', /The os_privileged_user_tenant parameter is required when privileged_user is set to true/
     end
   end
 
