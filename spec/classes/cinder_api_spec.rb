@@ -7,7 +7,9 @@ describe 'cinder::api' do
   end
   let :facts do
     {:osfamily       => 'Debian',
-     :processorcount => 8 }
+     :processorcount => 8,
+     :os_service_default => '<SERVICE DEFAULT>',
+    }
   end
 
   describe 'with only required params' do
@@ -81,6 +83,7 @@ describe 'cinder::api' do
       is_expected.to contain_cinder_config('DEFAULT/os_privileged_user_password').with_ensure('absent')
       is_expected.to contain_cinder_config('DEFAULT/os_privileged_user_tenant').with_ensure('absent')
       is_expected.to contain_cinder_config('DEFAULT/os_privileged_user_auth_url').with_ensure('absent')
+      is_expected.to contain_cinder_config('keymgr/encryption_auth_url').with_value('<SERVICE DEFAULT>')
     end
   end
 
@@ -297,6 +300,15 @@ describe 'cinder::api' do
 
     it { is_expected.to contain_cinder_api_paste_ini('filter:ratelimit/limits').with(
       :value => '(GET, "*", .*, 100, MINUTE);(POST, "*", .*, 200, MINUTE)'
+    )}
+  end
+
+  describe 'with encryption_auth_url' do
+    let :params do
+      req_params.merge({ :keymgr_encryption_auth_url => 'http://localhost:5000/v3' })
+    end
+    it { is_expected.to contain_cinder_config('keymgr/encryption_auth_url').with(
+      :value => 'http://localhost:5000/v3'
     )}
   end
 
