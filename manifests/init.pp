@@ -10,19 +10,15 @@
 #
 # [*verbose*]
 #   (Optional) Should the daemons log verbose messages
-#   Defaults to 'false'
+#   Defaults to undef.
 #
 # [*debug*]
 #   (Optional) Should the daemons log debug messages
-#   Defaults to 'false'
-#
-# [*use_syslog*]
-#   (Optional) Use syslog for logging.
-#   Defaults to false.
+#   Defaults to undef.
 #
 # [*rpc_backend*]
 #   (Optional) Use these options to configure the RabbitMQ message system.
-#   Defaults to 'cinder.openstack.common.rpc.impl_kombu'
+#   Defaults to 'rabbit'
 #
 # [*control_exchange*]
 #   (Optional)
@@ -73,75 +69,46 @@
 #   (optional) Connect over SSL for RabbitMQ
 #   Defaults to false
 #
+# [*report_interval*]
+#  (optional) Interval, in seconds, between nodes reporting state to
+#  datastore (integer value).
+#  Defaults to $::os_service_default
+#
+# [*service_down_time*]
+#  (optional) Maximum time since last check-in for a service to be
+#  considered up (integer value).
+#  Defaults to $::os_service_default
+#
 # [*kombu_ssl_ca_certs*]
 #   (optional) SSL certification authority file (valid only if SSL enabled).
-#   Defaults to '<SERVICE DEFAULT>'
+#   Defaults to $::os_service_default
 #
 # [*kombu_ssl_certfile*]
 #   (optional) SSL cert file (valid only if SSL enabled).
-#   Defaults to '<SERVICE DEFAULT>'
+#   Defaults to $::os_service_default
 #
 # [*kombu_ssl_keyfile*]
 #   (optional) SSL key file (valid only if SSL enabled).
-#   Defaults to '<SERVICE DEFAULT>'
+#   Defaults to $::os_service_default
 #
 # [*kombu_ssl_version*]
 #   (optional) SSL version to use (valid only if SSL enabled).
 #   Valid values are TLSv1, SSLv23 and SSLv3. SSLv2 may be
 #   available on some distributions.
-#   Defaults to '<SERVICE DEFAULT>'
+#   Defaults to $::os_service_default
+#
+# [*kombu_reconnect_delay*]
+#   (optional) How long to wait before reconnecting in response to an AMQP
+#   consumer cancel notification.
+#   Defaults to $::os_service_default
 #
 # [*amqp_durable_queues*]
 #   Use durable queues in amqp.
 #   (Optional) Defaults to false.
 #
-# [*qpid_hostname*]
-#   (Optional) Location of qpid server
-#   Defaults to 'localhost'.
-#
-# [*qpid_port*]
-#   (Optional) Port for qpid server.
-#   Defaults to '5672'.
-#
-# [*qpid_username*]
-#   (Optional) Username to use when connecting to qpid.
-#   Defaults to 'guest'.
-#
-# [*qpid_password*]
-#   (Optional) Password to use when connecting to qpid.
-#   Defaults to 'false'.
-#
-# [*qpid_sasl_mechanisms*]
-#   (Optional) ENable one or more SASL mechanisms.
-#   Defaults to 'false'.
-#
-# [*qpid_heartbeat*]
-#   (Optional) Seconds between connection keepalive heartbeats.
-#   Defaults to '60'.
-#
-# [*qpid_protocol*]
-#   (Optional) Transport to use, either 'tcp' or 'ssl'.
-#   Defaults to 'tcp'.
-#
-# [*qpid_tcp_nodelay*]
-#   (Optional) Disable Nagle Algorithm.
-#   Defaults to 'true'.
-#
-# [*qpid_reconnect*]
-#
-# [*qpid_reconnect_timeout*]
-#
-# [*qpid_reconnect_limit*]
-#
-# [*qpid_reconnect_interval*]
-#
-# [*qpid_reconnect_interval_min*]
-#
-# [*qpid_reconnect_interval_max*]
-#
-# [*use_syslog]
-#   Use syslog for logging.
-#   (Optional) Defaults to false.
+# [*use_syslog*]
+#   (Optional) Use syslog for logging.
+#   Defaults to undef.
 #
 # [*database_connection*]
 #    Url used to connect to database.
@@ -174,16 +141,17 @@
 #
 # [*use_stderr*]
 #   (optional) Use stderr for logging
-#   Defaults to true
+#   Defaults to undef.
 #
 # [*log_facility*]
-#   Syslog facility to receive log lines.
-#   (Optional) Defaults to LOG_USER.
+#   (Optional) Syslog facility to receive log lines.
+#   Defaults to undef.
 #
 # [*log_dir*]
 #   (optional) Directory where logs should be stored.
-#   If set to boolean false, it will not log to any directory.
-#   Defaults to '<SERVICE DEFAULT>'
+#   If set to boolean false or the $::os_service_default, it will not log to
+#   any directory.
+#   Defaults to '/var/log/cinder'.
 #
 # [*use_ssl*]
 #   (optional) Enable SSL on the API server
@@ -199,7 +167,7 @@
 #
 # [*ca_file*]
 #   (optional) CA certificate file to use to verify connecting clients
-#   Defaults to '<SERVICE DEFAULT>'
+#   Defaults to $::os_service_default
 #
 # [*storage_availability_zone*]
 #   (optional) Availability zone of the node.
@@ -231,8 +199,53 @@
 #
 # === Deprecated Parameters
 #
-# [*mysql_module*]
-#   DEPRECATED. Does nothing.
+# [*qpid_hostname*]
+#   (Optional) Location of qpid server
+#   Defaults to undef.
+#
+# [*qpid_port*]
+#   (Optional) Port for qpid server.
+#   Defaults to undef.
+#
+# [*qpid_hosts*]
+#   (Optional) Qpid HA cluster host:port pairs. (list value)
+#   Defaults to undef.
+#
+# [*qpid_username*]
+#   (Optional) Username to use when connecting to qpid.
+#   Defaults to undef.
+#
+# [*qpid_password*]
+#   (Optional) Password to use when connecting to qpid.
+#   Defaults to undef.
+#
+# [*qpid_sasl_mechanisms*]
+#   (Optional) ENable one or more SASL mechanisms.
+#   Defaults to undef.
+#
+# [*qpid_heartbeat*]
+#   (Optional) Seconds between connection keepalive heartbeats.
+#   Defaults to undef.
+#
+# [*qpid_protocol*]
+#   (Optional) Transport to use, either 'tcp' or 'ssl'.
+#   Defaults to undef.
+#
+# [*qpid_tcp_nodelay*]
+#   (Optional) Disable Nagle Algorithm.
+#   Defaults to undef.
+#
+# [*qpid_reconnect*]
+#
+# [*qpid_reconnect_timeout*]
+#
+# [*qpid_reconnect_limit*]
+#
+# [*qpid_reconnect_interval*]
+#
+# [*qpid_reconnect_interval_min*]
+#
+# [*qpid_reconnect_interval_max*]
 #
 class cinder (
   $database_connection                = undef,
@@ -242,7 +255,7 @@ class cinder (
   $database_max_retries               = undef,
   $database_retry_interval            = undef,
   $database_max_overflow              = undef,
-  $rpc_backend                        = 'cinder.openstack.common.rpc.impl_kombu',
+  $rpc_backend                        = 'rabbit',
   $control_exchange                   = 'openstack',
   $rabbit_host                        = '127.0.0.1',
   $rabbit_port                        = 5672,
@@ -253,52 +266,52 @@ class cinder (
   $rabbit_userid                      = 'guest',
   $rabbit_password                    = false,
   $rabbit_use_ssl                     = false,
-  $kombu_ssl_ca_certs                 = '<SERVICE DEFAULT>',
-  $kombu_ssl_certfile                 = '<SERVICE DEFAULT>',
-  $kombu_ssl_keyfile                  = '<SERVICE DEFAULT>',
-  $kombu_ssl_version                  = '<SERVICE DEFAULT>',
+  $service_down_time                  = $::os_service_default,
+  $report_interval                    = $::os_service_default,
+  $kombu_ssl_ca_certs                 = $::os_service_default,
+  $kombu_ssl_certfile                 = $::os_service_default,
+  $kombu_ssl_keyfile                  = $::os_service_default,
+  $kombu_ssl_version                  = $::os_service_default,
+  $kombu_reconnect_delay              = $::os_service_default,
   $amqp_durable_queues                = false,
-  $qpid_hostname                      = 'localhost',
-  $qpid_port                          = '5672',
-  $qpid_username                      = 'guest',
-  $qpid_password                      = false,
-  $qpid_sasl_mechanisms               = false,
-  $qpid_reconnect                     = true,
-  $qpid_reconnect_timeout             = 0,
-  $qpid_reconnect_limit               = 0,
-  $qpid_reconnect_interval_min        = 0,
-  $qpid_reconnect_interval_max        = 0,
-  $qpid_reconnect_interval            = 0,
-  $qpid_heartbeat                     = 60,
-  $qpid_protocol                      = 'tcp',
-  $qpid_tcp_nodelay                   = true,
   $package_ensure                     = 'present',
   $use_ssl                            = false,
-  $ca_file                            = '<SERVICE DEFAULT>',
+  $ca_file                            = $::os_service_default,
   $cert_file                          = false,
   $key_file                           = false,
   $api_paste_config                   = '/etc/cinder/api-paste.ini',
-  $use_syslog                         = false,
-  $use_stderr                         = true,
-  $log_facility                       = 'LOG_USER',
-  $log_dir                            = '<SERVICE DEFAULT>',
-  $verbose                            = false,
-  $debug                              = false,
+  $use_syslog                         = undef,
+  $use_stderr                         = undef,
+  $log_facility                       = undef,
+  $log_dir                            = '/var/log/cinder',
+  $verbose                            = undef,
+  $debug                              = undef,
   $storage_availability_zone          = 'nova',
   $default_availability_zone          = false,
   $enable_v1_api                      = true,
   $enable_v2_api                      = true,
   $lock_path                          = $::cinder::params::lock_path,
   # DEPRECATED PARAMETERS
-  $mysql_module                       = undef,
-)  {
+  $qpid_hostname                      = undef,
+  $qpid_port                          = undef,
+  $qpid_hosts                         = undef,
+  $qpid_username                      = undef,
+  $qpid_password                      = undef,
+  $qpid_sasl_mechanisms               = undef,
+  $qpid_reconnect                     = undef,
+  $qpid_reconnect_timeout             = undef,
+  $qpid_reconnect_limit               = undef,
+  $qpid_reconnect_interval_min        = undef,
+  $qpid_reconnect_interval_max        = undef,
+  $qpid_reconnect_interval            = undef,
+  $qpid_heartbeat                     = undef,
+  $qpid_protocol                      = undef,
+  $qpid_tcp_nodelay                   = undef,
+
+) inherits cinder::params {
 
   include ::cinder::db
-  include ::cinder::params
-
-  if $mysql_module {
-    warning('The mysql_module parameter is deprecated. The latest 2.x mysql module will be used.')
-  }
+  include ::cinder::logging
 
   if $use_ssl {
     if !$cert_file {
@@ -320,7 +333,7 @@ class cinder (
     require => Anchor['cinder-start'],
   }
 
-  if $rpc_backend == 'cinder.openstack.common.rpc.impl_kombu' {
+  if $rpc_backend == 'cinder.openstack.common.rpc.impl_kombu' or $rpc_backend == 'rabbit' {
 
     if ! $rabbit_password {
       fail('Please specify a rabbit_password parameter.')
@@ -335,10 +348,13 @@ class cinder (
       'oslo_messaging_rabbit/kombu_ssl_ca_certs':           value => $kombu_ssl_ca_certs;
       'oslo_messaging_rabbit/kombu_ssl_certfile':           value => $kombu_ssl_certfile;
       'oslo_messaging_rabbit/kombu_ssl_keyfile':            value => $kombu_ssl_keyfile;
+      'oslo_messaging_rabbit/kombu_reconnect_delay':        value => $kombu_reconnect_delay;
       'oslo_messaging_rabbit/heartbeat_timeout_threshold':  value => $rabbit_heartbeat_timeout_threshold;
       'oslo_messaging_rabbit/heartbeat_rate':               value => $rabbit_heartbeat_rate;
       'DEFAULT/control_exchange':                           value => $control_exchange;
-      'DEFAULT/amqp_durable_queues':                        value => $amqp_durable_queues;
+      'DEFAULT/report_interval':                            value => $report_interval;
+      'DEFAULT/service_down_time':                          value => $service_down_time;
+      'oslo_messaging_rabbit/amqp_durable_queues':          value => $amqp_durable_queues;
     }
 
     if $rabbit_hosts {
@@ -355,42 +371,8 @@ class cinder (
 
   }
 
-  if $rpc_backend == 'cinder.openstack.common.rpc.impl_qpid' {
-
-    if ! $qpid_password {
-      fail('Please specify a qpid_password parameter.')
-    }
-
-    cinder_config {
-      'DEFAULT/qpid_hostname':               value => $qpid_hostname;
-      'DEFAULT/qpid_port':                   value => $qpid_port;
-      'DEFAULT/qpid_username':               value => $qpid_username;
-      'DEFAULT/qpid_password':               value => $qpid_password, secret => true;
-      'DEFAULT/qpid_reconnect':              value => $qpid_reconnect;
-      'DEFAULT/qpid_reconnect_timeout':      value => $qpid_reconnect_timeout;
-      'DEFAULT/qpid_reconnect_limit':        value => $qpid_reconnect_limit;
-      'DEFAULT/qpid_reconnect_interval_min': value => $qpid_reconnect_interval_min;
-      'DEFAULT/qpid_reconnect_interval_max': value => $qpid_reconnect_interval_max;
-      'DEFAULT/qpid_reconnect_interval':     value => $qpid_reconnect_interval;
-      'DEFAULT/qpid_heartbeat':              value => $qpid_heartbeat;
-      'DEFAULT/qpid_protocol':               value => $qpid_protocol;
-      'DEFAULT/qpid_tcp_nodelay':            value => $qpid_tcp_nodelay;
-      'DEFAULT/amqp_durable_queues':         value => $amqp_durable_queues;
-    }
-
-    if is_array($qpid_sasl_mechanisms) {
-      cinder_config {
-        'DEFAULT/qpid_sasl_mechanisms': value => join($qpid_sasl_mechanisms, ' ');
-      }
-    } elsif $qpid_sasl_mechanisms {
-      cinder_config {
-        'DEFAULT/qpid_sasl_mechanisms': value => $qpid_sasl_mechanisms;
-      }
-    } else {
-      cinder_config {
-        'DEFAULT/qpid_sasl_mechanisms': ensure => absent;
-      }
-    }
+  if $rpc_backend == 'cinder.openstack.common.rpc.impl_qpid' or $rpc_backend == 'qpid' {
+    warning('Qpid driver is removed from Oslo.messaging in the Mitaka release')
   }
 
   if ! $default_availability_zone {
@@ -400,10 +382,6 @@ class cinder (
   }
 
   cinder_config {
-    'DEFAULT/log_dir':                   value => $log_dir;
-    'DEFAULT/verbose':                   value => $verbose;
-    'DEFAULT/debug':                     value => $debug;
-    'DEFAULT/use_stderr':                value => $use_stderr;
     'DEFAULT/api_paste_config':          value => $api_paste_config;
     'DEFAULT/rpc_backend':               value => $rpc_backend;
     'DEFAULT/storage_availability_zone': value => $storage_availability_zone;
@@ -422,17 +400,6 @@ class cinder (
       'DEFAULT/ssl_cert_file' : ensure => absent;
       'DEFAULT/ssl_key_file' :  ensure => absent;
       'DEFAULT/ssl_ca_file' :   ensure => absent;
-    }
-  }
-
-  if $use_syslog {
-    cinder_config {
-      'DEFAULT/use_syslog':           value => true;
-      'DEFAULT/syslog_log_facility':  value => $log_facility;
-    }
-  } else {
-    cinder_config {
-      'DEFAULT/use_syslog':           value => false;
     }
   }
 
