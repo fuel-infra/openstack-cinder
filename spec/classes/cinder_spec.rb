@@ -9,7 +9,7 @@ describe 'cinder' do
   end
 
   let :facts do
-    @default_facts.merge({
+    OSDefaults.get_facts({
       :osfamily => 'Debian',
       :operatingsystem => 'Debian',
       :operatingsystemrelease => 'jessie',
@@ -43,7 +43,7 @@ describe 'cinder' do
       is_expected.to contain_cinder_config('DEFAULT/storage_availability_zone').with(:value => 'nova')
       is_expected.to contain_cinder_config('DEFAULT/default_availability_zone').with(:value => 'nova')
       is_expected.to contain_cinder_config('DEFAULT/api_paste_config').with(:value => '/etc/cinder/api-paste.ini')
-      is_expected.to contain_cinder_config('DEFAULT/lock_path').with(:value => '/var/lock/cinder')
+      is_expected.to contain_cinder_config('oslo_concurrency/lock_path').with(:value => '/var/lock/cinder')
     end
 
   end
@@ -69,6 +69,16 @@ describe 'cinder' do
       is_expected.to contain_cinder_config('oslo_messaging_rabbit/rabbit_host').with(:value => nil)
       is_expected.to contain_cinder_config('oslo_messaging_rabbit/rabbit_port').with(:value => nil)
       is_expected.to contain_cinder_config('oslo_messaging_rabbit/rabbit_hosts').with(:value => 'rabbit1:5672')
+      is_expected.to contain_cinder_config('oslo_messaging_rabbit/rabbit_ha_queues').with(:value => false)
+    end
+  end
+
+  describe 'a single rabbit_host with enable ha queues' do
+    let :params do
+      req_params.merge({'rabbit_ha_queues' => true})
+    end
+
+    it 'should contain rabbit_ha_queues' do
       is_expected.to contain_cinder_config('oslo_messaging_rabbit/rabbit_ha_queues').with(:value => true)
     end
   end
@@ -142,7 +152,7 @@ describe 'cinder' do
 
   describe 'with different lock_path' do
     let(:params) { req_params.merge!({:lock_path => '/var/run/cinder.locks'}) }
-    it { is_expected.to contain_cinder_config('DEFAULT/lock_path').with_value('/var/run/cinder.locks') }
+    it { is_expected.to contain_cinder_config('oslo_concurrency/lock_path').with_value('/var/run/cinder.locks') }
   end
 
   describe 'with amqp_durable_queues disabled' do
@@ -233,5 +243,15 @@ describe 'cinder' do
     it { is_expected.to contain_cinder_config('DEFAULT/enable_v1_api').with_value(false) }
     it { is_expected.to contain_cinder_config('DEFAULT/enable_v2_api').with_value(true) }
 
+  end
+
+  describe 'with image_conversion_dir' do
+    let :params do
+      req_params.merge({
+        :image_conversion_dir => '/tmp/foo',
+      })
+    end
+
+    it { is_expected.to contain_cinder_config('DEFAULT/image_conversion_dir').with_value('/tmp/foo') }
   end
 end

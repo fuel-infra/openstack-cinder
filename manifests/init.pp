@@ -50,6 +50,10 @@
 #   (Optional) Virtual_host to use.
 #   Defaults to '/'
 #
+# [*rabbit_ha_queues*]
+#   (optional) Use HA queues in RabbitMQ (x-ha-policy: all).
+#   Defaults to undef
+#
 # [*rabbit_heartbeat_timeout_threshold*]
 #   (optional) Number of seconds after which the RabbitMQ broker is considered
 #   down if the heartbeat keepalive fails.  Any value >0 enables heartbeats.
@@ -197,6 +201,13 @@
 #   by the user executing the agent
 #   Defaults to: $::cinder::params::lock_path
 #
+# [*image_conversion_dir*]
+#   (optional) Location to store temporary image files if the volume
+#   driver does not write them directly to the volume and the volume conversion
+#   needs to be performed. This parameter replaces the
+#   'cinder::backend::rdb::volume_tmp_dir' parameter.
+#   Defaults to $::os_service_default
+#
 # === Deprecated Parameters
 #
 # [*qpid_hostname*]
@@ -259,8 +270,9 @@ class cinder (
   $control_exchange                   = 'openstack',
   $rabbit_host                        = '127.0.0.1',
   $rabbit_port                        = 5672,
-  $rabbit_hosts                       = false,
+  $rabbit_hosts                       = undef,
   $rabbit_virtual_host                = '/',
+  $rabbit_ha_queues                   = undef,
   $rabbit_heartbeat_timeout_threshold = 0,
   $rabbit_heartbeat_rate              = 2,
   $rabbit_userid                      = 'guest',
@@ -291,6 +303,7 @@ class cinder (
   $enable_v1_api                      = true,
   $enable_v2_api                      = true,
   $lock_path                          = $::cinder::params::lock_path,
+  $image_conversion_dir               = $::os_service_default,
   # DEPRECATED PARAMETERS
   $qpid_hostname                      = undef,
   $qpid_port                          = undef,
@@ -358,21 +371,30 @@ class cinder (
     }
 
     if $rabbit_hosts {
-      cinder_config { 'oslo_messaging_rabbit/rabbit_hosts':     value => join($rabbit_hosts, ',') }
-      cinder_config { 'oslo_messaging_rabbit/rabbit_ha_queues': value => true }
-      cinder_config { 'oslo_messaging_rabbit/rabbit_host':      ensure => absent }
-      cinder_config { 'oslo_messaging_rabbit/rabbit_port':      ensure => absent }
+      cinder_config { 'oslo_messaging_rabbit/rabbit_hosts': value => join(any2array($rabbit_hosts), ',') }
+      cinder_config { 'oslo_messaging_rabbit/rabbit_host':  ensure => absent }
+      cinder_config { 'oslo_messaging_rabbit/rabbit_port':  ensure => absent }
     } else {
-      cinder_config { 'oslo_messaging_rabbit/rabbit_host':      value => $rabbit_host }
-      cinder_config { 'oslo_messaging_rabbit/rabbit_port':      value => $rabbit_port }
-      cinder_config { 'oslo_messaging_rabbit/rabbit_hosts':     value => "${rabbit_host}:${rabbit_port}" }
-      cinder_config { 'oslo_messaging_rabbit/rabbit_ha_queues': value => false }
+      cinder_config { 'oslo_messaging_rabbit/rabbit_host':  value => $rabbit_host }
+      cinder_config { 'oslo_messaging_rabbit/rabbit_port':  value => $rabbit_port }
+      cinder_config { 'oslo_messaging_rabbit/rabbit_hosts': value => "${rabbit_host}:${rabbit_port}" }
+    }
+
+    # By default rabbit_ha_queues is undef
+    if $rabbit_ha_queues == undef {
+      if size($rabbit_hosts) > 1 {
+        cinder_config { 'oslo_messaging_rabbit/rabbit_ha_queues': value  => true }
+      } else {
+        cinder_config { 'oslo_messaging_rabbit/rabbit_ha_queues': value => false }
+      }
+    } else {
+      cinder_config { 'oslo_messaging_rabbit/rabbit_ha_queues': value => $rabbit_ha_queues }
     }
 
   }
 
   if $rpc_backend == 'cinder.openstack.common.rpc.impl_qpid' or $rpc_backend == 'qpid' {
-    warning('Qpid driver is removed from Oslo.messaging in the Mitaka release')
+    warning('Qpid driver is removed from Oslo.messaging in the Mitaka release and puppet-cinder no longer attempts to configure it. All qpid related parameters will be removed from puppet-cinder in the N-release.')
   }
 
   if ! $default_availability_zone {
@@ -386,6 +408,7 @@ class cinder (
     'DEFAULT/rpc_backend':               value => $rpc_backend;
     'DEFAULT/storage_availability_zone': value => $storage_availability_zone;
     'DEFAULT/default_availability_zone': value => $default_availability_zone_real;
+    'DEFAULT/image_conversion_dir':      value => $image_conversion_dir;
   }
 
   # SSL Options
@@ -407,7 +430,7 @@ class cinder (
   cinder_config {
     'DEFAULT/enable_v1_api':        value => $enable_v1_api;
     'DEFAULT/enable_v2_api':        value => $enable_v2_api;
-    'DEFAULT/lock_path':            value => $lock_path;
+    'oslo_concurrency/lock_path':   value => $lock_path;
   }
 
 }
